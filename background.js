@@ -13,6 +13,9 @@ chrome.action.onClicked.addListener(async (tab) => {
     const prevState = await chrome.action.getBadgeText({ tabId: tab.id });
     // Next state will always be the opposite
     const nextState = prevState === "ON" ? "OFF" : "ON";
+    await chrome.storage.local.set({
+      extensionEnabled: nextState === "ON",
+    });
 
     // Set the action badge to the next state
     await chrome.action.setBadgeText({
@@ -26,10 +29,22 @@ chrome.action.onClicked.addListener(async (tab) => {
         files: ["remove-sections.css"],
         target: { tabId: tab.id },
       });
+
+      // Execute the content script to apply the necessary changes to the page
+      await chrome.scripting.executeScript({
+        files: ["content.js"],
+        target: { tabId: tab.id },
+      });
     } else if (nextState === "OFF") {
       // Remove the CSS file when the user turns the extension off
       await chrome.scripting.removeCSS({
         files: ["remove-sections.css"],
+        target: { tabId: tab.id },
+      });
+
+      // Execute the content script to revert the changes made to the page
+      await chrome.scripting.executeScript({
+        files: ["content.js"],
         target: { tabId: tab.id },
       });
     }
